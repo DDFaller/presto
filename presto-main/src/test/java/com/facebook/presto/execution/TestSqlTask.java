@@ -37,6 +37,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.util.concurrent.ListenableFuture;
 import io.airlift.units.DataSize;
+import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.Test;
 
@@ -81,7 +82,9 @@ public class TestSqlTask
     private final SqlTaskExecutionFactory sqlTaskExecutionFactory;
 
     private final AtomicInteger nextTaskId = new AtomicInteger();
-
+    
+    private SqlTask sqlTask;
+    
     public TestSqlTask()
     {
         taskExecutor = new TaskExecutor(8, 16, 3, 4, TASK_FAIR, Ticker.systemTicker());
@@ -101,7 +104,12 @@ public class TestSqlTask
                 createTestSplitMonitor(),
                 new TaskManagerConfig());
     }
-
+    
+    @BeforeMethod
+    public void setup() {
+    	sqlTask = createInitialTask();
+    }
+    
     @AfterClass(alwaysRun = true)
     public void destroy()
     {
@@ -113,8 +121,6 @@ public class TestSqlTask
     @Test
     public void testEmptyQuery()
     {
-        SqlTask sqlTask = createInitialTask();
-
         TaskInfo taskInfo = sqlTask.updateTask(TEST_SESSION,
                 Optional.of(PLAN_FRAGMENT),
                 ImmutableList.of(),
@@ -142,8 +148,6 @@ public class TestSqlTask
     public void testSimpleQuery()
             throws Exception
     {
-        SqlTask sqlTask = createInitialTask();
-
         TaskInfo taskInfo = sqlTask.updateTask(TEST_SESSION,
                 Optional.of(PLAN_FRAGMENT),
                 ImmutableList.of(new TaskSource(TABLE_SCAN_NODE_ID, ImmutableSet.of(SPLIT), true)),
@@ -178,8 +182,6 @@ public class TestSqlTask
     @Test
     public void testCancel()
     {
-        SqlTask sqlTask = createInitialTask();
-
         TaskInfo taskInfo = sqlTask.updateTask(TEST_SESSION,
                 Optional.of(PLAN_FRAGMENT),
                 ImmutableList.of(),
@@ -207,8 +209,6 @@ public class TestSqlTask
     public void testAbort()
             throws Exception
     {
-        SqlTask sqlTask = createInitialTask();
-
         TaskInfo taskInfo = sqlTask.updateTask(TEST_SESSION,
                 Optional.of(PLAN_FRAGMENT),
                 ImmutableList.of(new TaskSource(TABLE_SCAN_NODE_ID, ImmutableSet.of(SPLIT), true)),
@@ -232,8 +232,6 @@ public class TestSqlTask
     public void testBufferCloseOnFinish()
             throws Exception
     {
-        SqlTask sqlTask = createInitialTask();
-
         OutputBuffers outputBuffers = createInitialEmptyOutputBuffers(PARTITIONED).withBuffer(OUT, 0).withNoMoreBufferIds();
         updateTask(sqlTask, EMPTY_SOURCES, outputBuffers);
 
@@ -259,8 +257,6 @@ public class TestSqlTask
     public void testBufferCloseOnCancel()
             throws Exception
     {
-        SqlTask sqlTask = createInitialTask();
-
         updateTask(sqlTask, EMPTY_SOURCES, createInitialEmptyOutputBuffers(PARTITIONED).withBuffer(OUT, 0).withNoMoreBufferIds());
 
         ListenableFuture<BufferResult> bufferResult = sqlTask.getTaskResults(OUT, 0, new DataSize(1, MEGABYTE));
@@ -281,8 +277,6 @@ public class TestSqlTask
     public void testBufferNotCloseOnFail()
             throws Exception
     {
-        SqlTask sqlTask = createInitialTask();
-
         updateTask(sqlTask, EMPTY_SOURCES, createInitialEmptyOutputBuffers(PARTITIONED).withBuffer(OUT, 0).withNoMoreBufferIds());
 
         ListenableFuture<BufferResult> bufferResult = sqlTask.getTaskResults(OUT, 0, new DataSize(1, MEGABYTE));

@@ -15,7 +15,10 @@ package com.facebook.presto.elasticsearch;
 
 import com.facebook.presto.common.type.ArrayType;
 import com.facebook.presto.common.type.RowType;
+import com.facebook.presto.common.type.StandardTypes;
 import com.facebook.presto.common.type.Type;
+import com.facebook.presto.common.type.TypeManager;
+import com.facebook.presto.common.type.TypeSignature;
 import com.facebook.presto.elasticsearch.client.ElasticsearchClient;
 import com.facebook.presto.elasticsearch.client.IndexMetadata;
 import com.facebook.presto.elasticsearch.client.IndexMetadata.DateTimeType;
@@ -63,13 +66,16 @@ import static java.util.Objects.requireNonNull;
 public class ElasticsearchMetadata
         implements ConnectorMetadata
 {
+	private final Type ipAddressType;
     private final ElasticsearchClient client;
     private final String schemaName;
 
     @Inject
     public ElasticsearchMetadata(ElasticsearchClient client, ElasticsearchConfig config)
     {
+    		
         requireNonNull(config, "config is null");
+        this.ipAddressType = TypeManager.getType(new TypeSignature(StandardTypes.IPADDRESS))
         this.client = requireNonNull(client, "client is null");
         this.schemaName = config.getDefaultSchema();
     }
@@ -240,6 +246,8 @@ public class ElasticsearchMetadata
                 case "text":
                 case "keyword":
                     return VARCHAR;
+                case "ip":
+                		return ipAddressType;
                 case "boolean":
                     return BOOLEAN;
                 case "binary":
